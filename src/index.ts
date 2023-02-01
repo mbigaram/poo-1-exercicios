@@ -158,104 +158,50 @@ app.post("/videos", async (req: Request, res: Response) => {
 
 app.put("/videos/:id", async (req: Request, res: Response) => {
     try {
+    const id: string = req.params.id
+    const { title, duration } = req.body
 
+    const videoDatabase = new VideoDatabase()
+    const videoDB = await videoDatabase.findVideoById(id)
 
-        const nId = req.params.id
-
-        const { id, title, duration, created_at} = req.body
-        
-
-        //const [ videoDB ]: TVideoDB[] | undefined[] = await db("videos").where({ id })
-
-        const videoDatabase = new VideoDatabase()
-        const videoDB = await videoDatabase.findVideoById(nId)
-
-        if (!videoDB) {
-            res.status(404)
-            throw new Error("'id' não encontrado")
-        }
-
-        const {newId, newTitle, newDuration} = req.body
-
-        //const [videoDBExists]: TVideoDB[] = await db("videos").where({id: newId})
-
-        
-        const videoDBExists = await videoDatabase.findVideoById(newId)
-
-
-        if (videoDBExists){
-            res.status(400)
-            throw new Error("'id' já existe")
-        }
-
-        //const [ videoToEdit ]: TVideoDB[] = await db("videos").where({id: id})
-
-        const videoToEdit = await videoDatabase.findVideoById(nId)
-
-
-        const video = new Video(
-            id,
-            title,
-            duration,
-            new Date().toISOString()
-        )
-
-        const newVideoDB: TVideoDB = {
-            id: video.getId(),
-            title: video.getTitulo(),
-            duration: video.getDuracao(),
-            created_at: video.getCreated_at()
-        }
-
-        // if(newId !==undefined){
-        //     if (typeof newId !== "string"){
-        //         res.status(400)
-        //         throw new Error("'id' deve se string")
-        //     }
-        //     video.setId(newId)
-        // }
-
-        // if(newTitle !==undefined){
-        //     if (typeof newTitle !== "string"){
-        //         res.status(400)
-        //         throw new Error("'title' deve se string")
-        //     }
-        //     video.setTitulo(newTitle)
-        // }
-        // if(newDuration !==undefined){
-        //     if (typeof newDuration !== "number"){
-        //         res.status(400)
-        //         throw new Error("'duration' deve se string")
-        //     }
-        //     video.setDuracao(newDuration)
-        // }
-
-        // const newVideoDB = {
-        //     ...video,
-        //     created_at: video.setPassword(new Date().toISOString())
-        // }
-
-        //await db("videos").update(newVideoDB).where({id: nId})
-        await videoDatabase.updateVideo(newVideoDB, id)
-
-        
-        res.status(200).send(video)
-    } catch (error) {
-        console.log(error)
-
-        if (req.statusCode === 200) {
-            res.status(500)
-        }
-
-        if (error instanceof Error) {
-            res.send(error.message)
-        } else {
-            res.send("Erro inesperado")
-        }
+    if (!videoDB) {
+        res.status(404)
+        throw new Error("Video não encontrado")
     }
+
+    const video = new Video(
+        id,
+        title,
+        duration,
+        new Date().toISOString()
+    )
+
+    const videoDBToUpdate: TVideoDB = {
+        id: video.getId(),
+        title: video.getTitulo(),
+        duration: video.getDuracao(),
+        created_at: video.getCreated_at()
+    }
+
+    await videoDatabase.updateVideo(videoDBToUpdate, id)
+
+    res.status(200).send(video)
+} catch (error) {
+    console.log(error)
+
+    if (res.statusCode === 200) {
+        res.statusCode = 500
+    }
+
+    if (error instanceof Error) {
+        res.send(error.message)
+    } else {
+        res.send("Erro inesperado")
+    }
+}
 })
-
-
+  
+  
 //------------------------------------------------------------------
 
 
@@ -266,15 +212,15 @@ app.delete("/videos/:id", async (req: Request, res: Response) => {
         const videoBaseDatabase = new VideoDatabase()
         const videoAvalible = await videoBaseDatabase.findVideoById(id)
 
-        if(!videoAvalible){
+        if (!videoAvalible) {
             res.status(404)
             throw new Error("Video não encontrado");
-            
-        }else{
-        
+
+        } else {
+
             await videoBaseDatabase.deleteVideo(id)
             res.status(200).send({
-                message:"video apagado com sucesso",
+                message: "video apagado com sucesso",
             })
         }
 
