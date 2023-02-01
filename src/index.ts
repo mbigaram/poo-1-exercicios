@@ -1,8 +1,10 @@
 import express, { Request, Response } from 'express'
 import cors from 'cors'
-import { db } from './database/knex'
+// import { db } from './database/BaseDatabase'
 import { TVideoDB, TVideoDBPost } from './types'
 import { Video } from './models/Videos'
+import { VideoDatabase } from './database/VideoDatabase'
+//import { isDeepStrictEqual } from 'util'
 
 
 const app = express()
@@ -35,21 +37,23 @@ app.get("/ping", async (req: Request, res: Response) => {
 
 app.get("/videos", async (req: Request, res: Response) => {
     try {
-        const q = req.query.q
+        const q = req.query.q as string | undefined
 
-        let videosDB //underfined
+        // let videosDB //underfined
 
-        if (q) {
-            const result: TVideoDB[] = await db("videos").where("title", "LIKE", `%${q}%`)
-            videosDB = result
-        } else {
-            const result: TVideoDB[] = await db("videos")
-            videosDB = result //dado cru
-        }
+        // if (q) {
+        //     const result: TVideoDB[] = await db("videos").where("title", "LIKE", `%${q}%`)
+        //     videosDB = result
+        // } else {
+        //     const result: TVideoDB[] = await db("videos")
+        //     videosDB = result //dado cru
+        // }
 
-         //vamos pegar as informações vindas do videosBD e INSTANCIA-LA em um objeto da classe Video
-                    
-        const vide: Video[] = videosDB.map((videoDB)=> new Video(
+        //vamos pegar as informações vindas do videosBD e INSTANCIA-LA em um objeto da classe Video
+        const videoDatabase = new VideoDatabase
+        const videosDB = await videoDatabase.findVideos(q)
+
+        const video: Video[] = videosDB.map((videoDB) => new Video(
             videoDB.id,
             videoDB.title,
             videoDB.duration,
@@ -58,7 +62,7 @@ app.get("/videos", async (req: Request, res: Response) => {
 
         //videos[0].name = "patricia" // não permite pq name é privado na classe User
 
-        res.status(200).send(vide) //dado instanciado
+        res.status(200).send(video) //dado instanciado
     } catch (error) {
         console.log(error)
 
@@ -81,7 +85,7 @@ app.get("/videos", async (req: Request, res: Response) => {
 
 app.post("/videos", async (req: Request, res: Response) => {
     try {
-        const { id, title, duration, created_at} = req.body //dado cru
+        const { id, title, duration, created_at } = req.body //dado cru
 
         if (typeof id !== "string") {
             res.status(400)
@@ -103,7 +107,10 @@ app.post("/videos", async (req: Request, res: Response) => {
             throw new Error("'created_at' deve ser string")
         }
 
-        const [ videoDBExists ]: TVideoDB[] | undefined[] = await db("videos").where({ id })
+        //const [videoDBExists]: TVideoDB[] | undefined[] = await db("videos").where({ id })
+        const videoDatabase = new VideoDatabase()
+        const videoDBExists = await videoDatabase.findVideoById(id)
+
 
         if (videoDBExists) {
             res.status(400)
@@ -111,8 +118,8 @@ app.post("/videos", async (req: Request, res: Response) => {
         }
 
         const newVideo = new Video(
-            id, 
-            title, 
+            id,
+            title,
             duration,
             new Date().toISOString()
         )
@@ -122,12 +129,13 @@ app.post("/videos", async (req: Request, res: Response) => {
             id: newVideo.getId(),
             title: newVideo.getTitulo(),
             duration: newVideo.getDuracao(),
-            created_at: newVideo.getCreated_at() 
+            created_at: newVideo.getCreated_at()
         }
 
-        await db("videos").insert(newVideoDB)
-                                                               
-        res.status(201).send(newVideo) 
+        //await db("videos").insert(newVideoDB)
+        const NewVideoDatabase = videoDatabase.insertVideo(newVideoDB)
+
+        res.status(201).send(newVideo)
     } catch (error) {
         console.log(error)
 
@@ -142,3 +150,152 @@ app.post("/videos", async (req: Request, res: Response) => {
         }
     }
 })
+
+
+
+//--------------------------------------------
+
+
+app.put("/videos/:id", async (req: Request, res: Response) => {
+    try {
+
+
+        const nId = req.params.id
+
+        const { id, title, duration, created_at} = req.body
+        
+
+        //const [ videoDB ]: TVideoDB[] | undefined[] = await db("videos").where({ id })
+
+        const videoDatabase = new VideoDatabase()
+        const videoDB = await videoDatabase.findVideoById(nId)
+
+        if (!videoDB) {
+            res.status(404)
+            throw new Error("'id' não encontrado")
+        }
+
+        const {newId, newTitle, newDuration} = req.body
+
+        //const [videoDBExists]: TVideoDB[] = await db("videos").where({id: newId})
+
+        
+        const videoDBExists = await videoDatabase.findVideoById(newId)
+
+
+        if (videoDBExists){
+            res.status(400)
+            throw new Error("'id' já existe")
+        }
+
+        //const [ videoToEdit ]: TVideoDB[] = await db("videos").where({id: id})
+
+        const videoToEdit = await videoDatabase.findVideoById(nId)
+
+
+        const video = new Video(
+            id,
+            title,
+            duration,
+            new Date().toISOString()
+        )
+
+        const newVideoDB: TVideoDB = {
+            id: video.getId(),
+            title: video.getTitulo(),
+            duration: video.getDuracao(),
+            created_at: video.getCreated_at()
+        }
+
+        // if(newId !==undefined){
+        //     if (typeof newId !== "string"){
+        //         res.status(400)
+        //         throw new Error("'id' deve se string")
+        //     }
+        //     video.setId(newId)
+        // }
+
+        // if(newTitle !==undefined){
+        //     if (typeof newTitle !== "string"){
+        //         res.status(400)
+        //         throw new Error("'title' deve se string")
+        //     }
+        //     video.setTitulo(newTitle)
+        // }
+        // if(newDuration !==undefined){
+        //     if (typeof newDuration !== "number"){
+        //         res.status(400)
+        //         throw new Error("'duration' deve se string")
+        //     }
+        //     video.setDuracao(newDuration)
+        // }
+
+        // const newVideoDB = {
+        //     ...video,
+        //     created_at: video.setPassword(new Date().toISOString())
+        // }
+
+        //await db("videos").update(newVideoDB).where({id: nId})
+        await videoDatabase.updateVideo(newVideoDB, id)
+
+        
+        res.status(200).send(video)
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+})
+
+
+//------------------------------------------------------------------
+
+
+app.delete("/videos/:id", async (req: Request, res: Response) => {
+    try {
+        const id = req.params.id
+
+        const videoBaseDatabase = new VideoDatabase()
+        const videoAvalible = await videoBaseDatabase.findVideoById(id)
+
+        if(!videoAvalible){
+            res.status(404)
+            throw new Error("Video não encontrado");
+            
+        }else{
+        
+            await videoBaseDatabase.deleteVideo(id)
+            res.status(200).send({
+                message:"video apagado com sucesso",
+            })
+        }
+
+    } catch (error) {
+        console.log(error)
+
+        if (req.statusCode === 200) {
+            res.status(500)
+        }
+
+        if (error instanceof Error) {
+            res.send(error.message)
+        } else {
+            res.send("Erro inesperado")
+        }
+    }
+})
+
+
+
+
+
+
+
