@@ -1,4 +1,5 @@
 import { VideoDatabase } from "../database/VideoDatabase"
+import { BadRequestError } from "../errors/BadRequestError"
 import { Video } from "../models/Videos"
 import { TVideoDB } from "../types"
 
@@ -29,19 +30,19 @@ export class VideoBusiness {
         const { id, title, duration, created_at } = input
 
         if (typeof id !== "string") {
-            throw new Error("'id' deve ser string")
+            throw new BadRequestError("'id' deve ser string")
         }
 
         if (typeof title !== "string") {
-            throw new Error("'title' deve ser string")
+            throw new BadRequestError("'title' deve ser string")
         }
 
         if (typeof duration !== "number") {
-            throw new Error("'duration' deve ser number")
+            throw new BadRequestError("'duration' deve ser number")
         }
 
         if (typeof created_at !== "string") {
-            throw new Error("'created_at' deve ser string")
+            throw new BadRequestError("'created_at' deve ser string")
         }
 
         //const [videoDBExists]: TVideoDB[] | undefined[] = await db("videos").where({ id })
@@ -51,7 +52,7 @@ export class VideoBusiness {
 
         if (videoDBExists) {
 
-            throw new Error("'id' já existe")
+            throw new BadRequestError("'id' já existe")
         }
 
         const newVideo = new Video(
@@ -87,7 +88,7 @@ export class VideoBusiness {
         const videoDB = await videoDatabase.findVideoById(id)
     
         if (!videoDB) {
-            throw new Error("Video não encontrado")
+            throw new BadRequestError("Video não encontrado")
         }
     
         const video = new Video(
@@ -121,7 +122,7 @@ export class VideoBusiness {
         const videoAvalible = await videoBaseDatabase.findVideoById(id)
 
         if (!videoAvalible) {
-            throw new Error("Video não encontrado");
+            throw new BadRequestError("Video não encontrado");
 
         } else {
 

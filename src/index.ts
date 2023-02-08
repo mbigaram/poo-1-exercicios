@@ -5,7 +5,8 @@ import { TVideoDB, TVideoDBPost } from './types'
 import { Video } from './models/Videos'
 import { VideoDatabase } from './database/VideoDatabase'
 import { VideoController } from './controller/VideoController'
-//import { isDeepStrictEqual } from 'util'
+import { videoRouter } from './router/videoRouter'
+
 
 
 const app = express()
@@ -35,16 +36,11 @@ app.get("/ping", async (req: Request, res: Response) => {
     }
 })
 
-const videoController = new VideoController()
+// const videoController = new VideoController()
 
 
-app.get("/videos", videoController.getVideos)
+app.use("/videos", videoRouter)
 
-app.post("/videos", videoController.createVideo)
-
-app.put("/videos/:id", videoController.editVideo)
-  
-app.delete("/videos/:id", videoController.deleteVideo)
 
 
 
